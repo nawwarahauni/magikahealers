@@ -151,11 +151,11 @@ function buildHouse(x, z, wallColor, roofColor) {
   return g;
 }
 
-// Comment out buildHouse() calls below if using house.glb instead
-buildHouse(-12, -12, 0xc87850, 0xe84040);
-buildHouse( 12, -12, 0xb06840, 0xc03030);
-buildHouse(-12,  12, 0xd09060, 0xe05020);
-buildHouse( 12,  12, 0xb87848, 0xd03838);
+// ❌ Box houses disabled — using house.glb instead
+// buildHouse(-12, -12, 0xc87850, 0xe84040);
+// buildHouse( 12, -12, 0xb06840, 0xc03030);
+// buildHouse(-12,  12, 0xd09060, 0xe05020);
+// buildHouse( 12,  12, 0xb87848, 0xd03838);
 
 // ── GLB House Loader (use this instead of buildHouse if you have house.glb) ──
 function loadHouseGLB(url, x, z, scale = 1) {
@@ -188,11 +188,11 @@ function loadHouseGLB(url, x, z, scale = 1) {
   (err) => console.warn('❌ House GLB load error:', err));
 }
 
-
- loadHouseGLB('./models/house.glb', -12, -12);
- loadHouseGLB('./models/house.glb',  12, -12);
- loadHouseGLB('./models/house.glb', -12,  12);
- loadHouseGLB('./models/house.glb',  12,  12);
+// Uncomment these (and comment out buildHouse calls above) once you have house.glb:
+// loadHouseGLB('./models/house.glb', -12, -12);
+// loadHouseGLB('./models/house.glb',  12, -12);
+// loadHouseGLB('./models/house.glb', -12,  12);
+// loadHouseGLB('./models/house.glb',  12,  12);
 
 // ── Well ──
 function buildWell(x, z) {

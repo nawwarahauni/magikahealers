@@ -108,6 +108,9 @@ function drawHandSkeleton(results) {
 function processHandFrame(results) {
   drawHandSkeleton(results);
 
+  // ☀️🌙 Sky mode gesture (finger count) — only when free roaming
+  if (dialogPhase === 0) processSkyGesture(results);
+
   ['left', 'right'].forEach(side => {
     const hs       = handState[side];
     const spell    = hs.spell;

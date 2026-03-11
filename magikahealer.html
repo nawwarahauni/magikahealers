@@ -81,6 +81,18 @@
 <div id="crosshair"></div>
 <div id="notif"></div>
 
+<!-- ── Sky Mode HUD (above hand status) ── -->
+<div id="sky-hud">
+  <div id="sky-mode-hud">🌙 NIGHT</div>
+  <div id="sky-gesture-row">
+    <span id="sky-finger-count">—</span>
+    <div class="charge-wrap" style="width:80px">
+      <div class="charge-fill" id="sky-charge"></div>
+    </div>
+  </div>
+  <div id="sky-hint">☝️ 1 finger = NOON &nbsp;|&nbsp; ✌️ 2 fingers = NIGHT</div>
+</div>
+
 <!-- ════════════════════════════════════════
      DIALOG BOX
 ════════════════════════════════════════ -->
@@ -113,12 +125,66 @@
 </div>
 
 <!-- ════════════════════════════════════════
-     TITLE SCREEN
+     TITLE SCREEN  (Hozy-style)
 ════════════════════════════════════════ -->
 <div id="title">
-  <h1>✦ MAGIKA<br>HEALERS ✦</h1>
-  <p>Explore Kampung Magika in 3D.<br>Find sick villagers.<br>Cast spells with your hands to heal them!</p>
-  <button onclick="startGame()">▶ MULA MAIN</button>
+
+  <!-- Background clouds -->
+  <div class="title-cloud cloud-1"></div>
+  <div class="title-cloud cloud-2"></div>
+  <div class="title-cloud cloud-3"></div>
+
+  <!-- Left side: logo + menu -->
+  <div id="title-left">
+    <div id="title-logo">Magika<br>Healers</div>
+
+    <nav id="title-menu">
+      <button class="menu-btn" onclick="startGame()">Start</button>
+      <button class="menu-btn" onclick="openSettings()">Settings</button>
+      <button class="menu-btn" onclick="quitGame()">Quit</button>
+    </nav>
+  </div>
+
+  <!-- Right side: your image -->
+  <div id="title-right">
+    <img id="title-art" src="./images/title.png"
+         onerror="this.style.display='none'"
+         alt="Kampung Magika">
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════
+     SETTINGS MODAL
+════════════════════════════════════════ -->
+<div id="settings-overlay" onclick="closeSettings()"></div>
+<div id="settings-modal">
+  <div id="settings-title">Settings</div>
+
+  <div class="setting-row">
+    <label>Music Volume</label>
+    <input type="range" min="0" max="100" value="70" id="set-music">
+  </div>
+  <div class="setting-row">
+    <label>SFX Volume</label>
+    <input type="range" min="0" max="100" value="90" id="set-sfx">
+  </div>
+  <div class="setting-row">
+    <label>Hand Tracking</label>
+    <select id="set-hand">
+      <option value="on">On</option>
+      <option value="off">Off</option>
+    </select>
+  </div>
+  <div class="setting-row">
+    <label>Language</label>
+    <select id="set-lang">
+      <option value="en">English</option>
+      <option value="my">Bahasa Melayu</option>
+    </select>
+  </div>
+
+  <button class="menu-btn" onclick="closeSettings()" style="margin-top:18px">Close</button>
 </div>
 
 <!-- ════════════════════════════════════════
@@ -143,12 +209,33 @@
 ════════════════════════════════════════ -->
 <script src="js/data.js"></script>
 <script src="js/world.js"></script>
+<script src="js/skymode.js"></script>
 <script src="js/npc.js"></script>
 <script src="js/vfx.js"></script>
 <script src="js/player.js"></script>
 <script src="js/game.js"></script>
 <script src="js/hands.js"></script>
 <script src="js/loop.js"></script>
+
+<script>
+function openSettings() {
+  document.getElementById('settings-overlay').style.display = 'block';
+  document.getElementById('settings-modal').style.display   = 'flex';
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').style.display = 'none';
+  document.getElementById('settings-modal').style.display   = 'none';
+}
+function quitGame() {
+  // In a browser we can't truly quit, so go back to title if in-game,
+  // or show a friendly message
+  if (gameRunning) {
+    if (confirm('Quit to title screen?')) location.reload();
+  } else {
+    window.close(); // works if opened via script; otherwise does nothing
+  }
+}
+</script>
 
 </body>
 </html>

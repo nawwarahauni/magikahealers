@@ -59,6 +59,9 @@ function animate() {
   // ── Spell VFX tick ──
   tickVFX();
 
+  // ── Sky mood transition tick ──
+  tickSkyMode();
+
   // ── Nearby NPC interact hint ──
   const nearNPC = getNearbyNPC();
   const hint    = document.getElementById('interact-hint');

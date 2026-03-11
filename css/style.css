@@ -118,7 +118,7 @@ body {
 /* ── CAM LABEL ── */
 #cam-label {
   position: fixed;
-  bottom: 265px; left: 0;
+  bottom: 338px; left: 0;
   font-size: 7px;
   color: var(--violet);
   letter-spacing: 1px;
@@ -303,42 +303,169 @@ body {
 #crosshair::before { width:100%; height:1px; top:50%;  transform:translateY(-50%); }
 #crosshair::after  { width:1px; height:100%; left:50%; transform:translateX(-50%); }
 
-/* ── TITLE SCREEN ── */
+/* ── TITLE SCREEN — Hozy style ── */
 #title {
   position: fixed; inset: 0;
-  background: #06020Fee;
+  background: linear-gradient(180deg, #b8d4e8 0%, #d6e8f4 50%, #e8f4f8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6vw;
+  z-index: 100;
+  overflow: hidden;
+}
+
+/* Animated clouds */
+.title-cloud {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  opacity: 0.75;
+  filter: blur(18px);
+  pointer-events: none;
+}
+.cloud-1 { width:420px; height:180px; top:8%;  left:-60px;  animation: cloudDrift 18s ease-in-out infinite alternate; }
+.cloud-2 { width:300px; height:130px; top:55%; right:-40px; animation: cloudDrift 24s ease-in-out infinite alternate-reverse; }
+.cloud-3 { width:260px; height:110px; top:30%; left:35%;    animation: cloudDrift 20s ease-in-out infinite alternate; }
+@keyframes cloudDrift {
+  from { transform: translateX(0px); }
+  to   { transform: translateX(40px); }
+}
+
+/* Left panel */
+#title-left {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  z-index: 100;
+  gap: 32px;
+  z-index: 2;
 }
-#title h1 {
-  color: var(--gold);
-  font-size: clamp(12px, 2.5vw, 20px);
-  text-align: center;
-  line-height: 2.2;
-  text-shadow: 0 0 30px var(--gold);
+
+/* Big wobbly logo */
+#title-logo {
+  font-family: 'Cinzel Decorative', cursive;
+  font-size: clamp(36px, 6vw, 72px);
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.1;
+  text-shadow:
+    4px 4px 0 #a0c0d8,
+    0 0 40px rgba(255,255,255,0.6);
+  letter-spacing: -1px;
+  animation: logoWobble 3s ease-in-out infinite;
 }
-#title p {
-  color: #806040;
-  font-size: 6px;
-  text-align: center;
-  line-height: 2.5;
-  max-width: 300px;
+@keyframes logoWobble {
+  0%,100% { transform: rotate(-1deg) scale(1);   }
+  50%      { transform: rotate( 1deg) scale(1.02); }
 }
-#title button {
-  background: #1a0a2a;
-  border: 2px solid var(--gold);
-  color: var(--gold);
-  font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
-  padding: 12px 22px;
+
+/* Menu buttons */
+#title-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.menu-btn {
+  background: rgba(255,255,255,0.88);
+  border: 2.5px solid rgba(0,0,0,0.12);
+  border-radius: 30px;
+  color: #333;
+  font-family: 'Cinzel Decorative', cursive;
+  font-size: clamp(13px, 1.8vw, 20px);
+  font-weight: 700;
+  padding: 10px 28px;
   cursor: pointer;
-  animation: blink 1.2s step-end infinite;
+  width: fit-content;
+  min-width: 160px;
+  text-align: left;
+  transition: all 0.18s;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+  letter-spacing: 0.5px;
 }
-#title button:hover { background:#2a1a08; animation:none; }
+.menu-btn:hover {
+  background: #fff;
+  transform: translateX(8px) scale(1.04);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  border-color: rgba(0,0,0,0.2);
+}
+.menu-btn:active {
+  transform: translateX(4px) scale(0.98);
+}
+
+/* Right panel — title art image */
+#title-right {
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+  padding-bottom: 0;
+}
+#title-art {
+  height: 88vh;
+  max-height: 700px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 40px rgba(0,0,0,0.18));
+  animation: artFloat 4s ease-in-out infinite;
+}
+@keyframes artFloat {
+  0%,100% { transform: translateY(0px);   }
+  50%      { transform: translateY(-14px); }
+}
+
+/* ── SETTINGS MODAL ── */
+#settings-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 200;
+  backdrop-filter: blur(4px);
+}
+#settings-modal {
+  display: none;
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 201;
+  background: rgba(255,255,255,0.95);
+  border-radius: 20px;
+  padding: 36px 44px;
+  min-width: 320px;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+#settings-title {
+  font-family: 'Cinzel Decorative', cursive;
+  font-size: 22px;
+  font-weight: 900;
+  color: #333;
+  margin-bottom: 8px;
+  text-align: center;
+}
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  font-family: 'Cinzel Decorative', cursive;
+  font-size: 12px;
+  color: #444;
+}
+.setting-row input[type=range] {
+  width: 130px;
+  accent-color: #a0c0d8;
+}
+.setting-row select {
+  font-family: 'Cinzel Decorative', cursive;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1.5px solid #ccc;
+  background: #f5f5f5;
+  color: #333;
+  cursor: pointer;
+}
 
 /* ── CONTROLS HINT ── */
 #controls {
@@ -388,3 +515,50 @@ body {
 }
 
 @keyframes blink { 50%{opacity:0} }
+
+/* ── SKY MODE HUD ── */
+#sky-hud {
+  position: fixed;
+  bottom: 270px;
+  left: 0;
+  width: 240px;
+  z-index: 61;
+  background: rgba(6, 2, 15, 0.90);
+  border-top:   1px solid #ffffff11;
+  border-right: 2px solid var(--violet);
+  padding: 8px 14px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+#sky-mode-hud {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #aabbff;
+  letter-spacing: 1px;
+  transition: color 0.5s;
+}
+#sky-mode-hud.sky-flash {
+  animation: skyPulse 0.6s ease-out;
+}
+@keyframes skyPulse {
+  0%   { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+#sky-gesture-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#sky-finger-count {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: #ffe066;
+  flex: 1;
+}
+#sky-hint {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 5px;
+  color: #554477;
+  line-height: 1.8;
+}
