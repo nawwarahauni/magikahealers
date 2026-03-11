@@ -1,22 +1,22 @@
 // ═══════════════════════════════════════════════════
 // js/skymode.js  —  Day / Night mood switcher
 // Triggered by finger count gestures:
-//   1 finger  →  NOON  (bright sun)
-//   2 fingers →  NIGHT (dark stars)
+//   1 finger  →  SUNSET (warm evening glow)
+//   2 fingers →  NIGHT  (dark stars)
 // ═══════════════════════════════════════════════════
 'use strict';
 
 // ── Sky presets ──
 const SKY_MODES = {
   noon: {
-    label:      '☀️ NOON',
-    bg:         0x87ceeb,   // sky blue
-    fog:        0x87ceeb,
-    fogDensity: 0.018,
-    ambient:    { color: 0xfff4cc, intensity: 3.5 },
-    sun:        { color: 0xffffff, intensity: 2.2 },
-    fill:       { color: 0xaaddff, intensity: 0.8 },
-    groundTint: 0x4a9a30,
+    label:      '🌅 SUNSET',
+    bg:         0xf4845f,   // deep orange horizon
+    fog:        0xe8724a,   // warm orange fog
+    fogDensity: 0.025,
+    ambient:    { color: 0xff9966, intensity: 1.8 },  // warm amber ambient
+    sun:        { color: 0xff6622, intensity: 1.6 },  // orange-red sun light
+    fill:       { color: 0xff4488, intensity: 0.5 },  // pink fill from opposite sky
+    groundTint: 0x5a4a20,  // golden-brown grass at sunset
   },
   night: {
     label:      '🌙 NIGHT',
@@ -54,17 +54,43 @@ function lerpColor(hexA, hexB, t) {
   );
 }
 
-// ── Sun visual mesh (big glowing sphere in the sky) ──
-const sunMesh = new THREE.Mesh(
-  new THREE.SphereGeometry(2, 12, 12),
-  new THREE.MeshBasicMaterial({ color: 0xfffaaa })
+// ── Sun visual mesh — large, low on horizon for sunset ──
+// Outer glow ring (big soft halo)
+const sunHalo = new THREE.Mesh(
+  new THREE.SphereGeometry(5, 16, 16),
+  new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.18 })
 );
-sunMesh.position.set(40, 35, -40);
-sunMesh.visible = false; // hidden at night
+sunHalo.position.set(55, 4, -55);
+scene.add(sunHalo);
+
+// Mid glow
+const sunMid = new THREE.Mesh(
+  new THREE.SphereGeometry(3.2, 16, 16),
+  new THREE.MeshBasicMaterial({ color: 0xff7700, transparent: true, opacity: 0.35 })
+);
+sunMid.position.copy(sunHalo.position);
+scene.add(sunMid);
+
+// Core sun disc
+const sunMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(2, 16, 16),
+  new THREE.MeshBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 1.0 })
+);
+sunMesh.position.copy(sunHalo.position);
+sunMesh.visible = false;
 scene.add(sunMesh);
 
-// Sun glow (point light near sun mesh)
-const sunGlow = new THREE.PointLight(0xfff4aa, 0, 80);
+// Horizon gradient bar
+const horizonGlow = new THREE.Mesh(
+  new THREE.BoxGeometry(200, 3, 1),
+  new THREE.MeshBasicMaterial({ color: 0xff5500, transparent: true, opacity: 0.25 })
+);
+horizonGlow.position.set(0, 1.5, -55);
+horizonGlow.visible = false;
+scene.add(horizonGlow);
+
+// Sun point light
+const sunGlow = new THREE.PointLight(0xff6622, 0, 120);
 sunGlow.position.copy(sunMesh.position);
 scene.add(sunGlow);
 
@@ -121,10 +147,14 @@ function applySkyInstant(modeName) {
   fillLight.intensity = m.fill.intensity;
   ground.material.color.setHex(m.groundTint);
 
-  sunMesh.visible  = (modeName === 'noon');
-  moonMesh.visible = (modeName === 'night');
-  sunGlow.intensity  = (modeName === 'noon')  ? 2.0 : 0;
-  moonGlow.intensity = (modeName === 'night') ? 1.0 : 0;
+  const isSunset = modeName === 'noon';
+  sunMesh.visible      = isSunset;
+  sunHalo.visible      = isSunset;
+  sunMid.visible       = isSunset;
+  horizonGlow.visible  = isSunset;
+  moonMesh.visible     = (modeName === 'night');
+  sunGlow.intensity    = isSunset ? 3.0 : 0;
+  moonGlow.intensity   = (modeName === 'night') ? 1.0 : 0;
 }
 
 // ── Tick: smooth transition each frame ──
@@ -143,10 +173,8 @@ function tickSkyMode() {
   const to   = SKY_MODES[skyTransition.to];
 
   // Background & fog
-  const bgColor  = lerpColor(from.bg,  to.bg,  t);
-  const fogColor = lerpColor(from.fog, to.fog, t);
-  renderer.setClearColor(bgColor, 1);
-  scene.fog.color.setHex(fogColor);
+  renderer.setClearColor(lerpColor(from.bg,  to.bg,  t), 1);
+  scene.fog.color.setHex(lerpColor(from.fog, to.fog, t));
   scene.fog.density = from.fogDensity + (to.fogDensity - from.fogDensity) * t;
 
   // Ambient light
@@ -166,18 +194,36 @@ function tickSkyMode() {
   // Ground tint
   ground.material.color.setHex(lerpColor(from.groundTint, to.groundTint, t));
 
-  // Sun & moon visibility fade
-  const isGoingNoon  = skyTransition.to === 'noon';
-  sunMesh.visible    = true; moonMesh.visible = true;
-  sunGlow.intensity  = isGoingNoon  ? t * 2.0       : (1 - t) * 2.0;
-  moonGlow.intensity = isGoingNoon  ? (1 - t) * 1.0 : t * 1.0;
-  sunMesh.material.opacity  = isGoingNoon  ? t         : 1 - t;
-  moonMesh.material.opacity = isGoingNoon  ? 1 - t     : t;
+  // Sun & moon fade
+  const isGoingSunset = skyTransition.to === 'noon';
+
+  // Show all sun layers during transition
+  sunMesh.visible     = true;
+  sunHalo.visible     = true;
+  sunMid.visible      = true;
+  horizonGlow.visible = true;
+  moonMesh.visible    = true;
+
+  const sunAlpha  = isGoingSunset ? t       : 1 - t;
+  const moonAlpha = isGoingSunset ? 1 - t   : t;
+
+  sunMesh.material.opacity     = sunAlpha;
+  sunHalo.material.opacity     = sunAlpha * 0.18;
+  sunMid.material.opacity      = sunAlpha * 0.35;
+  horizonGlow.material.opacity = sunAlpha * 0.25;
+  moonMesh.material.opacity    = moonAlpha;
+
+  sunGlow.intensity  = isGoingSunset ? t * 3.0       : (1 - t) * 3.0;
+  moonGlow.intensity = isGoingSunset ? (1 - t) * 1.0 : t * 1.0;
 
   if (skyTransition.progress >= 1) {
     skyTransition.active = false;
-    sunMesh.visible  = (skyTransition.to === 'noon');
-    moonMesh.visible = (skyTransition.to === 'night');
+    const finalSunset = skyTransition.to === 'noon';
+    sunMesh.visible     = finalSunset;
+    sunHalo.visible     = finalSunset;
+    sunMid.visible      = finalSunset;
+    horizonGlow.visible = finalSunset;
+    moonMesh.visible    = !finalSunset;
   }
 }
 
@@ -258,7 +304,7 @@ function processSkyGesture(results) {
   // Update finger count display
   const el = document.getElementById('sky-finger-count');
   if (el) {
-    el.textContent = (count === 1) ? '☝️ 1 = NOON'
+    el.textContent = (count === 1) ? '☝️ 1 = SUNSET'
                    : (count === 2) ? '✌️ 2 = NIGHT'
                    : (count === 0) ? '—'
                    : count + ' fingers';

@@ -188,11 +188,11 @@ function loadHouseGLB(url, x, z, scale = 1) {
   (err) => console.warn('❌ House GLB load error:', err));
 }
 
-// Uncomment these (and comment out buildHouse calls above) once you have house.glb:
-// loadHouseGLB('./models/house.glb', -12, -12);
-// loadHouseGLB('./models/house.glb',  12, -12);
-// loadHouseGLB('./models/house.glb', -12,  12);
-// loadHouseGLB('./models/house.glb',  12,  12);
+
+loadHouseGLB('./models/house.glb', -12, -12);
+loadHouseGLB('./models/house.glb',  12, -12);
+ loadHouseGLB('./models/house.glb', -12,  12);
+ loadHouseGLB('./models/house.glb',  12,  12);
 
 // ── Well ──
 function buildWell(x, z) {
@@ -328,16 +328,146 @@ addFence(-FR,  FR,  FR,  FR);
 addFence(-FR, -FR, -FR,  FR);
 addFence( FR, -FR,  FR,  FR);
 
-// ── Stars ──
-const starGeo = new THREE.BufferGeometry();
-const sPos = new Float32Array(2000 * 3);
-for (let i = 0; i < 2000*3; i += 3) {
-  sPos[i]   = (Math.random() - 0.5) * 400;
-  sPos[i+1] = 20 + Math.random() * 100;
-  sPos[i+2] = (Math.random() - 0.5) * 400;
+// ── Stars (3 layers — bright, twinkling) ──
+
+// Layer 1 — large bright white stars
+const starGeo1 = new THREE.BufferGeometry();
+const sPos1 = new Float32Array(600 * 3);
+for (let i = 0; i < 600*3; i += 3) {
+  sPos1[i]   = (Math.random() - 0.5) * 400;
+  sPos1[i+1] = 25 + Math.random() * 80;
+  sPos1[i+2] = (Math.random() - 0.5) * 400;
 }
-starGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
-scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.25, sizeAttenuation: true })));
+starGeo1.setAttribute('position', new THREE.BufferAttribute(sPos1, 3));
+const starMat1 = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, sizeAttenuation: true, transparent: true, opacity: 1.0 });
+const starPoints1 = new THREE.Points(starGeo1, starMat1);
+scene.add(starPoints1);
+
+// Layer 2 — medium warm-tinted stars
+const starGeo2 = new THREE.BufferGeometry();
+const sPos2 = new Float32Array(1000 * 3);
+for (let i = 0; i < 1000*3; i += 3) {
+  sPos2[i]   = (Math.random() - 0.5) * 400;
+  sPos2[i+1] = 20 + Math.random() * 100;
+  sPos2[i+2] = (Math.random() - 0.5) * 400;
+}
+starGeo2.setAttribute('position', new THREE.BufferAttribute(sPos2, 3));
+const starMat2 = new THREE.PointsMaterial({ color: 0xffeedd, size: 0.4, sizeAttenuation: true, transparent: true, opacity: 0.9 });
+const starPoints2 = new THREE.Points(starGeo2, starMat2);
+scene.add(starPoints2);
+
+// Layer 3 — tiny cool-blue background stars
+const starGeo3 = new THREE.BufferGeometry();
+const sPos3 = new Float32Array(1500 * 3);
+for (let i = 0; i < 1500*3; i += 3) {
+  sPos3[i]   = (Math.random() - 0.5) * 400;
+  sPos3[i+1] = 15 + Math.random() * 110;
+  sPos3[i+2] = (Math.random() - 0.5) * 400;
+}
+starGeo3.setAttribute('position', new THREE.BufferAttribute(sPos3, 3));
+const starMat3 = new THREE.PointsMaterial({ color: 0xaabbff, size: 0.2, sizeAttenuation: true, transparent: true, opacity: 0.6 });
+const starPoints3 = new THREE.Points(starGeo3, starMat3);
+scene.add(starPoints3);
+
+// All star materials — used by tickStars() in loop.js for twinkle effect
+const allStarMats = [starMat1, starMat2, starMat3];
+
+// ── Lamp Post System ──
+// Positions: along N-S road, E-W road, and beside each house
+const LAMP_POSITIONS = [
+  // N-S road left & right side, every 6 units
+  { x:  1.8, z: -18 }, { x:  1.8, z: -12 }, { x:  1.8, z:  -6 },
+  { x:  1.8, z:   6 }, { x:  1.8, z:  12 }, { x:  1.8, z:  18 },
+  { x: -1.8, z: -18 }, { x: -1.8, z: -12 }, { x: -1.8, z:  -6 },
+  { x: -1.8, z:   6 }, { x: -1.8, z:  12 }, { x: -1.8, z:  18 },
+  // E-W road top & bottom side, every 6 units
+  { x: -18, z:  1.8 }, { x: -12, z:  1.8 }, { x:  -6, z:  1.8 },
+  { x:   6, z:  1.8 }, { x:  12, z:  1.8 }, { x:  18, z:  1.8 },
+  { x: -18, z: -1.8 }, { x: -12, z: -1.8 }, { x:  -6, z: -1.8 },
+  { x:   6, z: -1.8 }, { x:  12, z: -1.8 }, { x:  18, z: -1.8 },
+  // Beside each house corner
+  { x: -10, z: -12 }, { x: -14, z: -10 },
+  { x:  10, z: -12 }, { x:  14, z: -10 },
+  { x: -10, z:  12 }, { x: -14, z:  10 },
+  { x:  10, z:  12 }, { x:  14, z:  10 },
+];
+
+const lampObjects = []; // { group, light, glow } — used by skymode.js to dim/brighten
+
+// Fallback lamp if GLB fails
+function buildFallbackLamp(x, z) {
+  const g = new THREE.Group();
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06, 0.08, 3.5, 6),
+    new THREE.MeshLambertMaterial({ color: 0x444455 })
+  );
+  pole.position.y = 1.75; pole.castShadow = true;
+  g.add(pole);
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.22, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffeeaa })
+  );
+  head.position.y = 3.6;
+  g.add(head);
+  const light = new THREE.PointLight(0xffcc66, 1.8, 8);
+  light.position.y = 3.6;
+  g.add(light);
+  g.position.set(x, 0, z);
+  scene.add(g);
+  lampObjects.push({ group: g, light, glow: head });
+}
+
+// GLB lamp loader — clones model for every position
+function loadLampGLB(url) {
+  const loader = new THREE.GLTFLoader();
+  loader.load(url, (gltf) => {
+    console.log('Lamp GLB loaded — placing', LAMP_POSITIONS.length, 'lamps');
+    LAMP_POSITIONS.forEach(({ x, z }) => {
+      const model = gltf.scene.clone(true);
+
+      // Scale to ~3.5 units tall
+      const bbox = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3();
+      bbox.getSize(size);
+      model.scale.setScalar(3.5 / size.y);
+
+      // Sit on ground
+      const bbox2 = new THREE.Box3().setFromObject(model);
+      model.position.y = -bbox2.min.y;
+
+      model.traverse(child => {
+        if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+      });
+
+      const group = new THREE.Group();
+      group.add(model);
+      group.position.set(x, 0, z);
+      scene.add(group);
+
+      // Warm point light at lamp head height
+      const light = new THREE.PointLight(0xffcc66, 2.0, 10);
+      light.position.set(x, 3.4, z);
+      scene.add(light);
+
+      // Glowing orb mesh at lamp head
+      const glow = new THREE.Mesh(
+        new THREE.SphereGeometry(0.18, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xffeeaa })
+      );
+      glow.position.set(x, 3.5, z);
+      scene.add(glow);
+
+      lampObjects.push({ group, light, glow });
+    });
+  },
+  undefined,
+  (err) => {
+    console.warn(' Lamp GLB failed — using fallback poles:', err);
+    LAMP_POSITIONS.forEach(({ x, z }) => buildFallbackLamp(x, z));
+  });
+}
+
+loadLampGLB('../models/floor_lamp.glb');
 
 // ── Magic Particles ──
 const mpGeo = new THREE.BufferGeometry();
