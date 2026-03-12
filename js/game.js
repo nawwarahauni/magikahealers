@@ -97,7 +97,7 @@ function castSpell(key) {
   const stepEl   = document.getElementById('cs-' + comboIndex);
 
   if (key === expected) {
-    // ✅ Correct
+    //  Correct
     if (stepEl) { stepEl.classList.remove('active'); stepEl.classList.add('done'); }
     fireSpellVFX(spell.color, npcObj.group, false);
     notify(spell.icon + ' ' + spell.name + ' — CORRECT!');
@@ -109,7 +109,7 @@ function castSpell(key) {
     if (comboIndex >= activeNPC.combo.length) setTimeout(() => resolveHeal(true), 700);
 
   } else {
-    // ❌ Wrong
+    // Wrong
     if (stepEl) {
       stepEl.classList.add('wrong');
       setTimeout(() => stepEl.classList.remove('wrong'), 400);

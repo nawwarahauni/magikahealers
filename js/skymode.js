@@ -9,7 +9,7 @@
 // ── Sky presets ──
 const SKY_MODES = {
   noon: {
-    label:      '🌅 SUNSET',
+    label:      'SUNSET',
     bg:         0xf4845f,   // deep orange horizon
     fog:        0xe8724a,   // warm orange fog
     fogDensity: 0.025,
@@ -19,7 +19,7 @@ const SKY_MODES = {
     groundTint: 0x5a4a20,  // golden-brown grass at sunset
   },
   night: {
-    label:      '🌙 NIGHT',
+    label:      'NIGHT',
     bg:         0x01000a,
     fog:        0x01000a,
     fogDensity: 0.05,
