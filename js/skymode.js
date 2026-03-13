@@ -316,7 +316,7 @@ function updateSkyChargeBar(pct) {
   if (!bar) return;
   bar.style.width = pct + '%';
   bar.style.background = pct > 0
-    ? `linear-gradient(90deg, #ffe06688, #ffe066)`
+    ? `linear-gradient(90deg, #f8ba88a9, #efd43e)`
     : 'transparent';
 }
 

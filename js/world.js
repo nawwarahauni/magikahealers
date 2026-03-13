@@ -298,35 +298,6 @@ flowerData.forEach(([x, z, col]) => {
   scene.add(bloom);
 });
 
-// ── Fences ──
-function addFence(x1, z1, x2, z2) {
-  const dx = x2-x1, dz = z2-z1;
-  const len = Math.sqrt(dx*dx + dz*dz);
-  if (len < 0.01) return;
-  const m = new THREE.Mesh(
-    new THREE.BoxGeometry(len, 0.15, 0.12),
-    new THREE.MeshLambertMaterial({ color: 0x9a7050 })
-  );
-  m.position.set((x1+x2)/2, 0.6, (z1+z2)/2);
-  m.rotation.y = Math.atan2(dx, dz);
-  scene.add(m);
-}
-const FR = 7.5;
-for (let i = -FR; i <= FR; i += 2.5) {
-  if (Math.abs(i) < 1.8) continue;
-  addFence(i, -FR, i+0.1, -FR);
-  addFence(i,  FR, i+0.1,  FR);
-}
-addFence(-FR,-FR, FR,-FR); addFence(-FR, FR, FR, FR);
-addFence(-FR,-FR,-FR, FR); addFence( FR,-FR, FR, FR);
-const OR = 22;
-for (let i = -OR; i <= OR; i += 3) {
-  if (Math.abs(i) < 2) continue;
-  addFence(i, -OR, i+0.1, -OR);
-  addFence(i,  OR, i+0.1,  OR);
-}
-addFence(-OR,-OR, OR,-OR); addFence(-OR, OR, OR, OR);
-addFence(-OR,-OR,-OR, OR); addFence( OR,-OR, OR, OR);
 
 // ── Stars (2 layers, reduced counts) ──
 const starGeo1 = new THREE.BufferGeometry();
@@ -405,49 +376,93 @@ function loadLampGLB(url) {
   loader.load(url, (gltf) => {
     LAMP_POSITIONS.forEach(({ x, z }, idx) => {
       const group = new THREE.Group();
+      const bamboo = 0xc8880a; // golden bamboo colour
+      const cageMat = new THREE.MeshLambertMaterial({ color: bamboo });
 
-      // ── Rectangle base tray (pelita stand) ──
-      const base = new THREE.Mesh(
-        new THREE.BoxGeometry(0.5, 0.06, 0.22),
-        new THREE.MeshLambertMaterial({ color: 0x5a3a10 })
+      // ── 1. Tall bamboo stick ──
+      const stick = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.05, 2.2, 6),
+        cageMat
       );
-      base.position.y = 0.03;
-      group.add(base);
+      stick.position.y = 1.1;
+      group.add(stick);
 
-      // Small legs under the base
-      [[-0.18, 0.09], [0.18, 0.09], [-0.18, -0.09], [0.18, -0.09]].forEach(([lx, lz]) => {
-        const leg = new THREE.Mesh(
-          new THREE.BoxGeometry(0.05, 0.06, 0.05),
-          new THREE.MeshLambertMaterial({ color: 0x3a2208 })
+      // ── 2. Cage / basket holder (4 vertical bars + 3 rings) ──
+      const cageY = 2.2;   // top of stick
+      const cageH = 0.55;  // cage height
+      const cageR = 0.13;  // cage radius
+
+      // 4 vertical cage bars
+      [0, Math.PI/2, Math.PI, Math.PI*1.5].forEach(angle => {
+        const bar = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.025, 0.025, cageH, 4),
+          cageMat
         );
-        leg.position.set(lx, 0, lz);
-        group.add(leg);
+        bar.position.set(
+          Math.cos(angle) * cageR,
+          cageY + cageH / 2,
+          Math.sin(angle) * cageR
+        );
+        group.add(bar);
       });
 
-      // ── Pelita GLB — scaled small ──
+      // Top ring
+      const ringTop = new THREE.Mesh(
+        new THREE.TorusGeometry(cageR, 0.025, 4, 12),
+        cageMat
+      );
+      ringTop.rotation.x = Math.PI / 2;
+      ringTop.position.y = cageY + cageH;
+      group.add(ringTop);
+
+      // Bottom ring
+      const ringBot = new THREE.Mesh(
+        new THREE.TorusGeometry(cageR, 0.025, 4, 12),
+        cageMat
+      );
+      ringBot.rotation.x = Math.PI / 2;
+      ringBot.position.y = cageY;
+      group.add(ringBot);
+
+      // Mid ring
+      const ringMid = new THREE.Mesh(
+        new THREE.TorusGeometry(cageR, 0.02, 4, 12),
+        cageMat
+      );
+      ringMid.rotation.x = Math.PI / 2;
+      ringMid.position.y = cageY + cageH * 0.5;
+      group.add(ringMid);
+
+      // ── 3. Pelita GLB inside the cage ──
       const model = gltf.scene.clone(true);
       const bbox = new THREE.Box3().setFromObject(model);
       const size = new THREE.Vector3();
       bbox.getSize(size);
-      model.scale.setScalar(0.45 / size.y); // small: 0.45 units tall
+      model.scale.setScalar(0.42 / size.y);
       const bbox2 = new THREE.Box3().setFromObject(model);
-      model.position.y = -bbox2.min.y + 0.06; // sit on top of the base
+      model.position.y = -(bbox2.min.y) + cageY + 0.02;
       group.add(model);
 
-      // ── Flame glow above pelita ──
+      // ── 4. Flame at top ──
       const glow = new THREE.Mesh(
-        new THREE.SphereGeometry(0.06, 5, 5),
-        new THREE.MeshBasicMaterial({ color: 0xff9922 })
+        new THREE.ConeGeometry(0.04, 0.18, 5),
+        new THREE.MeshBasicMaterial({ color: 0xffdd00 })
       );
-      glow.position.y = 0.65;
+      glow.position.y = cageY + cageH + 0.14;
       group.add(glow);
 
-      // Soft halo around the flame
-      const halo = new THREE.Mesh(
-        new THREE.SphereGeometry(0.12, 5, 5),
-        new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.3 })
+      const flameOuter = new THREE.Mesh(
+        new THREE.ConeGeometry(0.06, 0.22, 5),
+        new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.85 })
       );
-      halo.position.y = 0.65;
+      flameOuter.position.y = cageY + cageH + 0.12;
+      group.add(flameOuter);
+
+      const halo = new THREE.Mesh(
+        new THREE.SphereGeometry(0.1, 5, 5),
+        new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.25 })
+      );
+      halo.position.y = cageY + cageH + 0.08;
       group.add(halo);
 
       group.position.set(x, 0, z);
